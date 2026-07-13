@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<!-- saved from url=(0049)file:///C:/Users/petrp/Downloads/sap_kariera.html -->
+<html lang="cs"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAP Kariéra — Prototyp v0.1</title>
+<style>
+  :root{
+    /* --- Herní svět (teplé, ilustrované) --- */
+    --wall: #E8DFCE;
+    --wall-dark: #DCD0B8;
+    --floor: #C9B79C;
+    --desk: #8B6F47;
+    --desk-dark: #6B5335;
+    --accent-navy: #2C3E50;
+    --accent-teal: #4C8577;
+    --accent-amber: #E8A33D;
+    --text-dark: #2B2620;
+    --dialogue-bg: #FFFDF8;
+    --card-shadow: 0 8px 24px rgba(43,38,32,0.18);
+
+    /* --- SAP GUI mock (vědomě odlišný, "autentický" vzhled) --- */
+    --sap-titlebar: #0A4D8C;
+    --sap-titlebar-light: #1971C2;
+    --sap-panel: #EAEAEA;
+    --sap-panel-2: #F4F4F4;
+    --sap-border: #9AA0A6;
+    --sap-field-bg: #FFFFFF;
+    --sap-field-border: #7C7C7C;
+    --sap-label: #2A2A2A;
+    --sap-required: #C0392B;
+    --sap-msg-success-bg: #DCEEDC;
+    --sap-msg-success-text: #1E5B1E;
+    --sap-msg-error-bg: #FBE2E0;
+    --sap-msg-error-text: #A32A20;
+    --sap-font: Arial, "Segoe UI", Tahoma, sans-serif;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    font-family: 'Georgia', 'Iowan Old Style', serif;
+    background: linear-gradient(180deg, #F6F1E4 0%, #EFE7D5 100%);
+    color: var(--text-dark);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    padding: 16px;
+  }
+
+  #app{
+    width: 1000px;
+    max-width: 100%;
+    position: relative;
+  }
+
+  /* ---------- HUD ---------- */
+  #hud{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background: var(--accent-navy);
+    color: #F4F1E8;
+    padding: 10px 18px;
+    border-radius: 10px 10px 0 0;
+    font-family: system-ui, sans-serif;
+    font-size: 14px;
+  }
+  #hud .hud-left{ display:flex; align-items:center; gap:14px; }
+  #hud .day-badge{
+    background: var(--accent-amber);
+    color: #2B2620;
+    font-weight:700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 13px;
+  }
+  #hud .ticket-status{ opacity: 0.9; }
+  #hud .ticket-status .done{ color: #8FD19E; font-weight:700; }
+  #xpWrap{ display:flex; align-items:center; gap:8px; }
+  #xpBarOuter{
+    width: 120px; height: 8px; background: rgba(255,255,255,0.25);
+    border-radius: 6px; overflow:hidden;
+  }
+  #xpBarInner{ height:100%; width:0%; background: var(--accent-teal); transition: width .4s ease; }
+
+  /* ---------- Scéna ---------- */
+  #sceneWrap{
+    position:relative;
+    border-radius: 0 0 10px 10px;
+    overflow:hidden;
+    box-shadow: var(--card-shadow);
+  }
+  canvas#sceneCanvas{
+    display:block;
+    width:100%;
+    height:auto;
+    background: var(--wall);
+  }
+
+  /* ---------- Dialogová bublina ---------- */
+  #dialogueBox{
+    position:absolute;
+    left: 16px; right:16px; bottom: 16px;
+    background: var(--dialogue-bg);
+    border-radius: 12px;
+    box-shadow: var(--card-shadow);
+    padding: 14px 18px;
+    display:flex;
+    gap:14px;
+    align-items:flex-start;
+    font-family: system-ui, sans-serif;
+  }
+  #dialogueBox.hidden{ display:none; }
+  #mentorAvatar{
+    flex: 0 0 auto;
+    width: 46px; height:46px; border-radius:50%;
+    background: var(--accent-teal);
+    color:#fff; display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:16px;
+  }
+  #dialogueContent{ flex:1; }
+  #mentorName{ font-weight:700; font-size:13px; color: var(--accent-navy); margin-bottom:4px; }
+  #dialogueText{ font-size:14.5px; line-height:1.5; min-height: 42px; }
+  #dialogueBtnRow{ margin-top:10px; display:flex; justify-content:flex-end; }
+  .btn{
+    font-family: system-ui, sans-serif;
+    border:none; cursor:pointer;
+    padding: 8px 16px;
+    border-radius: 7px;
+    font-size: 13.5px;
+    font-weight:600;
+    background: var(--accent-navy);
+    color:#fff;
+    transition: transform .1s ease, background .15s ease;
+  }
+  .btn:hover{ background:#1f2e3b; transform: translateY(-1px); }
+  .btn.amber{ background: var(--accent-amber); color:#2B2620; }
+  .btn.amber:hover{ background:#d1901d; }
+
+  /* ---------- Start screen ---------- */
+  #startScreen{
+    position:absolute; inset:0;
+    background: linear-gradient(160deg, var(--accent-navy), #1a2733);
+    color:#F4F1E8;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding: 40px; border-radius:10px;
+    font-family: system-ui, sans-serif;
+    z-index: 20;
+  }
+  #startScreen h1{
+    font-family:'Georgia', serif;
+    font-size: 34px; margin:0 0 6px;
+    letter-spacing: 0.5px;
+  }
+  #startScreen .subtitle{
+    color: var(--accent-amber);
+    font-weight:600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-size: 12px;
+    margin-bottom: 22px;
+  }
+  #startScreen p{ max-width: 520px; line-height:1.6; font-size:14.5px; opacity:0.92; }
+  #startScreen.hidden{ display:none; }
+
+  /* ---------- SAP modál ---------- */
+  #sapModalOverlay{
+    position:fixed; inset:0;
+    background: rgba(20,20,20,0.55);
+    display:flex; align-items:center; justify-content:center;
+    z-index: 50;
+    padding: 20px;
+  }
+  #sapModalOverlay.hidden{ display:none; }
+
+  #sapWindow{
+    width: 100%; max-width: 780px;
+    max-height: 92vh;
+    background: var(--sap-panel);
+    border: 1px solid #555;
+    border-radius: 4px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    font-family: var(--sap-font);
+    display:flex; flex-direction:column;
+    overflow:hidden;
+  }
+  #sapTitleBar{
+    background: linear-gradient(180deg, var(--sap-titlebar-light), var(--sap-titlebar));
+    color:#fff;
+    padding: 7px 12px;
+    display:flex; align-items:center; justify-content:space-between;
+    font-size: 13px;
+  }
+  #sapTitleBar .sap-title-left{ display:flex; align-items:center; gap:8px; }
+  .sap-icon-dot{
+    width:16px; height:16px; border-radius:3px;
+    background: #fff; color: var(--sap-titlebar);
+    font-size:10px; font-weight:800;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #sapCloseX{
+    cursor:pointer; background:rgba(255,255,255,0.15); border:none; color:#fff;
+    width:22px; height:20px; border-radius:2px; font-size:13px; line-height:1;
+  }
+  #sapCloseX:hover{ background:rgba(255,255,255,0.3); }
+
+  #sapToolbar{
+    background: var(--sap-panel-2);
+    border-bottom: 1px solid var(--sap-border);
+    padding: 6px 10px;
+    display:flex; align-items:center; gap:8px;
+    font-size:12.5px;
+  }
+  #sapToolbar .tcode-label{ color:#555; font-size:11px; }
+  #sapToolbar input.tcode{
+    font-family: var(--sap-font);
+    border:1px solid var(--sap-field-border);
+    background:#fff;
+    padding:3px 6px;
+    width: 90px;
+    font-size:12.5px;
+  }
+  .toolbar-ico{
+    width:24px;height:22px;
+    background:#fff;
+    border:1px solid var(--sap-border);
+    border-radius:2px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px;
+    cursor:default;
+    color:#444;
+  }
+
+  #sapBody{
+    padding: 14px 16px 8px;
+    overflow-y:auto;
+    background: var(--sap-panel-2);
+  }
+  .sap-section-title{
+    background: #D9D9D9;
+    border: 1px solid var(--sap-border);
+    padding: 4px 8px;
+    font-size: 12.5px;
+    font-weight:700;
+    color: var(--sap-label);
+    margin-bottom: 8px;
+    margin-top: 14px;
+  }
+  .sap-section-title:first-child{ margin-top:0; }
+
+  .sap-field-row{
+    display:flex;
+    align-items:flex-start;
+    gap: 8px;
+    margin-bottom: 7px;
+    font-size: 12.5px;
+  }
+  .sap-label{
+    width: 150px;
+    flex: 0 0 150px;
+    color: var(--sap-label);
+    padding-top: 4px;
+    text-align: right;
+    display:flex;
+    justify-content:flex-end;
+    gap:4px;
+  }
+  .sap-label .req{ color: var(--sap-required); font-weight:700; }
+  .sap-input-wrap{ flex:1; display:flex; flex-direction:column; gap:2px; max-width: 320px; }
+  .sap-field-row input[type=text],
+  .sap-field-row input[type=number],
+  .sap-field-row input[type=date],
+  .sap-field-row select{
+    font-family: var(--sap-font);
+    border: 1px solid var(--sap-field-border);
+    background: var(--sap-field-bg);
+    padding: 4px 6px;
+    font-size: 12.5px;
+    width: 100%;
+  }
+  .sap-field-row input[readonly]{
+    background: #ECECEC;
+    color:#555;
+  }
+  .sap-field-row.error input, .sap-field-row.error select{
+    border-color: var(--sap-required);
+    background: #FFF3F2;
+    outline: 1px solid var(--sap-required);
+  }
+  .help-btn{
+    width:16px; height:16px; border-radius:50%;
+    border:1px solid #7C7C7C; background:#fff; color:#555;
+    font-size:10px; line-height:1; cursor:pointer;
+    flex: 0 0 auto;
+  }
+  .help-btn:hover{ background:#e0e0e0; }
+  .field-help{
+    display:none;
+    font-size:11.5px; color:#555;
+    background:#FFFCE8; border:1px dashed #D8C879;
+    padding:4px 6px; margin-top:2px;
+    font-family: system-ui, sans-serif;
+  }
+  .field-help.show{ display:block; }
+
+  #sapStatusBar{
+    font-family: var(--sap-font);
+    font-size: 12.5px;
+    padding: 7px 12px;
+    border-top: 1px solid var(--sap-border);
+    background: var(--sap-panel);
+    min-height: 17px;
+  }
+  #sapStatusBar.success{ background: var(--sap-msg-success-bg); color: var(--sap-msg-success-text); font-weight:700; }
+  #sapStatusBar.error{ background: var(--sap-msg-error-bg); color: var(--sap-msg-error-text); font-weight:700; }
+
+  #sapFooter{
+    display:flex; justify-content:flex-end; gap:8px;
+    padding: 8px 12px;
+    background: var(--sap-panel);
+    border-top: 1px solid #ccc;
+  }
+  #sapFooter .btn{
+    background:#DDEBFA; color:#0A4D8C; border:1px solid #9AB8DE;
+    font-family: var(--sap-font); font-weight:700; font-size:12.5px;
+    padding: 6px 14px;
+  }
+  #sapFooter .btn:hover{ background:#CBE0F5; }
+  #sapFooter .btn:disabled{ opacity:0.45; cursor:not-allowed; }
+  #sapFooter .btn.primary{ background: var(--sap-titlebar); color:#fff; border-color:var(--sap-titlebar); }
+  #sapFooter .btn.primary:hover{ background:#083e6f; }
+
+  /* ---------- Konec dne ---------- */
+  #dayEndOverlay{
+    position:fixed; inset:0; background:rgba(20,20,20,0.6);
+    display:flex; align-items:center; justify-content:center; z-index:60;
+  }
+  #dayEndOverlay.hidden{ display:none; }
+  #dayEndCard{
+    background: var(--dialogue-bg);
+    border-radius: 14px;
+    padding: 30px 34px;
+    max-width: 420px;
+    text-align:center;
+    box-shadow: var(--card-shadow);
+    font-family: system-ui, sans-serif;
+  }
+  #dayEndCard h2{ font-family:'Georgia', serif; color:var(--accent-navy); margin-top:0; }
+  #dayEndCard .xp-earned{ color: var(--accent-teal); font-weight:700; font-size: 20px; margin: 10px 0; }
+  #dayEndCard p{ font-size:13.5px; line-height:1.55; color:#4a453d; }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <div id="hud">
+    <div class="hud-left">
+      <span class="day-badge">Den <span id="dayNum">1</span></span>
+      <span class="ticket-status">Úkol dne: Vytvoř objednávku (ME21N) — <span id="ticketDoneLabel" class="">nesplněno</span></span>
+    </div>
+    <div id="xpWrap">
+      <span>XP</span>
+      <div id="xpBarOuter"><div id="xpBarInner" style="width: 0%;"></div></div>
+      <span id="xpNum">0</span>
+    </div>
+  </div>
+
+  <div id="sceneWrap">
+    <canvas id="sceneCanvas" width="1000" height="540"></canvas>
+
+    <div id="startScreen">
+      <div class="subtitle">Prototyp v0.1 · Modul MM · Nákup</div>
+      <h1>SAP Kariéra</h1>
+      <p>
+        Jsi novým klíčovým uživatelem (key userem) ve firmě Nordkron Industries. Tvoje mentorka Olga tě dnes provede
+        vytvořením první objednávky v SAPu — transakce <strong>ME21N</strong>. Sleduj obrazovku
+        na stole: uvidíš tam skutečnou strukturu SAP transakce, kterou budeš vyplňovat a systém
+        ji bude vyhodnocovat úplně stejně, jako to dělá to opravdové.
+      </p>
+      <button class="btn amber" id="startBtn" style="margin-top:18px;">Začít den 1</button>
+    </div>
+
+    <div id="dialogueBox" class="hidden">
+      <div id="mentorAvatar">ON</div>
+      <div id="dialogueContent">
+        <div id="mentorName">Olga Nováková — Senior Key User</div>
+        <div id="dialogueText"></div>
+        <div id="dialogueBtnRow">
+          <button class="btn" id="dialogueNextBtn">Pokračovat ▸</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===================== SAP MOCK MODÁL ===================== -->
+<div id="sapModalOverlay" class="hidden">
+  <div id="sapWindow">
+    <div id="sapTitleBar">
+      <div class="sap-title-left">
+        <span class="sap-icon-dot">S</span>
+        <span>SAP Easy Access — Nordkron Industries s.r.o. [100] Testovací klient</span>
+      </div>
+      <button id="sapCloseX" title="Zavřít">✕</button>
+    </div>
+
+    <div id="sapToolbar">
+      <span class="tcode-label">Transakce:</span>
+      <input class="tcode" type="text" value="ME21N — Vytvořit objednávku" readonly="">
+      <span class="toolbar-ico" title="Uložit">💾</span>
+      <span class="toolbar-ico" title="Zpět">↩</span>
+      <span class="toolbar-ico" title="Nápověda F1">?</span>
+    </div>
+
+    <div id="sapBody">
+
+      <div class="sap-section-title">Hlavička dokladu</div>
+
+      <div class="sap-field-row" data-field="docType">
+        <div class="sap-label">Druh dokladu</div>
+        <div class="sap-input-wrap">
+          <input type="text" value="NB — Standardní objednávka" readonly="">
+        </div>
+      </div>
+
+      <div class="sap-field-row" data-field="vendor">
+        <div class="sap-label"><span class="req">*</span>Dodavatel <button class="help-btn" data-help="h-vendor">?</button></div>
+        <div class="sap-input-wrap">
+          <select id="f-vendor">
+            <option value="">— vyber dodavatele —</option>
+          <option value="1000">1000 — Steelcore CZ s.r.o.</option><option value="1001">1001 — KovoTech a.s.</option><option value="1002">1002 — Prague Metal Supply</option></select>
+          <div class="field-help" id="h-vendor">Dodavatel = obchodní partner, kterému objednávku posíláme. Musí souhlasit s tím, kdo firmě reálně poslal nabídku — jinak systém sice doklad uloží, ale obchodně je to chyba.</div>
+        </div>
+      </div>
+
+      <div class="sap-field-row" data-field="purchOrg">
+        <div class="sap-label">Nákupní organizace</div>
+        <div class="sap-input-wrap">
+          <input type="text" value="1000 — Nordkron CZ" readonly="">
+        </div>
+      </div>
+
+      <div class="sap-field-row" data-field="purchGroup">
+        <div class="sap-label"><span class="req">*</span>Nákupní skupina <button class="help-btn" data-help="h-pg">?</button></div>
+        <div class="sap-input-wrap">
+          <select id="f-purchGroup">
+            <option value="">— vyber —</option>
+          <option value="001">001 — Nákup materiálu</option><option value="002">002 — Nákup služeb</option></select>
+          <div class="field-help" id="h-pg">Nákupní skupina určuje, který tým/nákupčí doklad zpracovává. Pro materiál se typicně používá jiná skupina než pro nákup služeb.</div>
+        </div>
+      </div>
+
+      <div class="sap-field-row" data-field="docDate">
+        <div class="sap-label"><span class="req">*</span>Datum dokladu</div>
+        <div class="sap-input-wrap">
+          <input type="date" id="f-docDate">
+        </div>
+      </div>
+
+      <div class="sap-section-title">Položka 1</div>
+
+      <div class="sap-field-row" data-field="material">
+        <div class="sap-label"><span class="req">*</span>Materiál <button class="help-btn" data-help="h-mat">?</button></div>
+        <div class="sap-input-wrap">
+          <select id="f-material">
+            <option value="">— vyber materiál —</option>
+          <option value="M-100">M-100 — Ocelový profil 40x40</option><option value="M-200">M-200 — Hliníkový plech 2mm</option><option value="M-300">M-300 — Svařovací drát</option></select>
+          <div class="field-help" id="h-mat">Číslo materiálu z materiálového kmene (MM03). Systém podle něj automaticky natáhne text, jednotku i další atributy.</div>
+        </div>
+      </div>
+
+      <div class="sap-field-row" data-field="quantity">
+        <div class="sap-label"><span class="req">*</span>Množství <button class="help-btn" data-help="h-qty">?</button></div>
+        <div class="sap-input-wrap">
+          <input type="number" id="f-quantity" min="0" step="1" placeholder="např. 100">
+          <div class="field-help" id="h-qty">Systém ohlídá jen to, že je číslo kladné. To, jestli množství odpovídá skutečné poptávce, musíš zkontrolovat sám — SAP neví, co si dodavatel s firmou domluvili mimo systém.</div>
+        </div>
+      </div>
+
+      <div class="sap-field-row" data-field="unit">
+        <div class="sap-label">Jednotka</div>
+        <div class="sap-input-wrap">
+          <input type="text" value="KS" readonly="">
+        </div>
+      </div>
+
+      <div class="sap-field-row" data-field="netPrice">
+        <div class="sap-label"><span class="req">*</span>Netto cena / KS</div>
+        <div class="sap-input-wrap">
+          <input type="number" id="f-netPrice" min="0" step="0.01" placeholder="Kč">
+        </div>
+      </div>
+
+      <div class="sap-field-row" data-field="currency">
+        <div class="sap-label">Měna</div>
+        <div class="sap-input-wrap">
+          <input type="text" value="CZK" readonly="">
+        </div>
+      </div>
+
+      <div class="sap-field-row" data-field="deliveryDate">
+        <div class="sap-label"><span class="req">*</span>Termín dodání <button class="help-btn" data-help="h-del">?</button></div>
+        <div class="sap-input-wrap">
+          <input type="date" id="f-deliveryDate">
+          <div class="field-help" id="h-del">Datum, kdy má zboží dorazit. Logicky nemůže být dřív než datum vystavení dokladu — systém to skutečně hlídá.</div>
+        </div>
+      </div>
+
+      <div class="sap-field-row" data-field="plant">
+        <div class="sap-label"><span class="req">*</span>Závod <button class="help-btn" data-help="h-plant">?</button></div>
+        <div class="sap-input-wrap">
+          <select id="f-plant">
+            <option value="">— vyber —</option>
+          <option value="1000">1000 — Praha — výroba</option><option value="2000">2000 — Brno — sklad</option></select>
+          <div class="field-help" id="h-plant">Závod = organizační jednotka, do které se zboží fyzicky přijímá. Ovlivňuje i to, jaké sklady a procesy jsou dál dostupné.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="sapStatusBar"></div>
+
+    <div id="sapFooter">
+      <button class="btn" id="sapSaveBtn">💾 Uložit</button>
+      <button class="btn primary hidden" id="sapCloseBtn" disabled="">Zavřít obrazovku</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== KONEC DNE ===================== -->
+<div id="dayEndOverlay" class="hidden">
+  <div id="dayEndCard">
+    <h2>Den 1 dokončen</h2>
+    <div class="xp-earned">+ <span id="dayEndXp">0</span> XP</div>
+    <p id="dayEndText"></p>
+    <button class="btn amber" id="dayEndCloseBtn">Rozumím</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   SAP KARIÉRA — prototyp v0.1
+   Architektura je připravená na rozšíření: nové questy (QUESTS pole),
+   nové moduly (module: 'MM' | 'WM' | 'RE-FX' | 'FI-AA'...), nová prostředí
+   (ENV: 'office' | 'meeting' | 'warehouse' | 'terrace'...).
+   V0.1 obsahuje jeden plně funkční quest v modulu MM: vytvoření objednávky
+   (mock transakce ME21N) v prostředí kanceláře.
+   ========================================================================= */
+
+/* ---------- Datové sady (mock master data) ---------- */
+const VENDORS = [
+  { id: '1000', name: 'Steelcore CZ s.r.o.' },
+  { id: '1001', name: 'KovoTech a.s.' },
+  { id: '1002', name: 'Prague Metal Supply' },
+];
+const MATERIALS = [
+  { id: 'M-100', name: 'Ocelový profil 40x40', price: 245 },
+  { id: 'M-200', name: 'Hliníkový plech 2mm', price: 410 },
+  { id: 'M-300', name: 'Svařovací drát', price: 95 },
+];
+const PURCH_GROUPS = [
+  { id: '001', name: 'Nákup materiálu' },
+  { id: '002', name: 'Nákup služeb' },
+];
+const PLANTS = [
+  { id: '1000', name: 'Praha — výroba' },
+  { id: '2000', name: 'Brno — sklad' },
+];
+
+/* Scénář dnešního ticketu — "správné" odpovědi podle poptávky */
+const TICKET = {
+  correctVendor: '1000',
+  correctMaterial: 'M-100',
+  correctQuantity: 100,
+  correctPurchGroup: '001',
+};
+
+/* ---------- Herní stav ---------- */
+const state = {
+  day: 1,
+  xp: 0,
+  ticketDone: false,
+};
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem('sapKariera_v1');
+    if (raw) Object.assign(state, JSON.parse(raw));
+  } catch (e) { /* ignore */ }
+}
+function saveState() {
+  try { localStorage.setItem('sapKariera_v1', JSON.stringify(state)); } catch (e) {}
+}
+
+function refreshHud() {
+  document.getElementById('dayNum').textContent = state.day;
+  document.getElementById('xpNum').textContent = state.xp;
+  document.getElementById('xpBarInner').style.width = Math.min(100, state.xp) + '%';
+  const label = document.getElementById('ticketDoneLabel');
+  label.textContent = state.ticketDone ? 'splněno ✓' : 'nesplněno';
+  label.className = state.ticketDone ? 'done' : '';
+}
+
+/* ---------- Canvas: ilustrace kanceláře ---------- */
+const canvas = document.getElementById('sceneCanvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+/* zóna monitoru pro detekci kliknutí (v souřadnicích canvasu) */
+const monitorHit = { x: 560, y: 240, w: 170, h: 120 };
+let hoveringMonitor = false;
+let t = 0;
+
+function drawScene() {
+  ctx.clearRect(0, 0, W, H);
+
+  /* stěna */
+  const wallGrad = ctx.createLinearGradient(0, 0, 0, 360);
+  wallGrad.addColorStop(0, '#EDE4D2');
+  wallGrad.addColorStop(1, '#E2D6BC');
+  ctx.fillStyle = wallGrad;
+  ctx.fillRect(0, 0, W, 360);
+
+  /* podlaha */
+  ctx.fillStyle = '#C9B79C';
+  ctx.fillRect(0, 360, W, H - 360);
+  ctx.strokeStyle = 'rgba(107,83,53,0.25)';
+  ctx.lineWidth = 1;
+  for (let x = -200; x < W + 200; x += 60) {
+    ctx.beginPath();
+    ctx.moveTo(x, 360);
+    ctx.lineTo(x - 90, H);
+    ctx.stroke();
+  }
+
+  /* okno s výhledem na Prahu */
+  ctx.fillStyle = '#8CA9B8';
+  ctx.fillRect(60, 60, 220, 220);
+  const skyGrad = ctx.createLinearGradient(60, 60, 60, 280);
+  skyGrad.addColorStop(0, '#BFD8E4');
+  skyGrad.addColorStop(1, '#8CA9B8');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(66, 66, 208, 208);
+  ctx.fillStyle = 'rgba(60,70,80,0.55)';
+  ctx.fillRect(90, 190, 24, 90);
+  ctx.fillRect(130, 160, 30, 120);
+  ctx.beginPath(); ctx.moveTo(145, 160); ctx.lineTo(160, 130); ctx.lineTo(175, 160); ctx.fill();
+  ctx.fillRect(190, 200, 26, 80);
+  ctx.fillRect(225, 175, 22, 105);
+  ctx.strokeStyle = '#6B5335'; ctx.lineWidth = 8;
+  ctx.strokeRect(60, 60, 220, 220);
+  ctx.beginPath(); ctx.moveTo(170, 60); ctx.lineTo(170, 280); ctx.stroke();
+
+  /* rostlina */
+  ctx.fillStyle = '#7C5A3A';
+  ctx.fillRect(40, 300, 46, 40);
+  ctx.fillStyle = '#4C8577';
+  [[63, 300], [45, 285], [82, 285], [63, 270]].forEach(p => {
+    ctx.beginPath(); ctx.ellipse(p[0], p[1], 22, 30, 0, 0, Math.PI * 2); ctx.fill();
+  });
+
+  /* nástěnný "kalendář" */
+  ctx.fillStyle = '#FFFDF8';
+  ctx.fillRect(340, 70, 90, 70);
+  ctx.strokeStyle = '#C9B79C'; ctx.lineWidth = 2;
+  ctx.strokeRect(340, 70, 90, 70);
+  ctx.fillStyle = '#2C3E50';
+  ctx.font = '11px system-ui'; ctx.textAlign = 'center';
+  ctx.fillText('DEN', 385, 90);
+  ctx.font = 'bold 26px system-ui';
+  ctx.fillText(String(state.day), 385, 122);
+
+  /* stůl */
+  ctx.fillStyle = '#6B5335';
+  ctx.fillRect(430, 330, 480, 16);
+  ctx.fillStyle = '#8B6F47';
+  ctx.fillRect(430, 260, 480, 72);
+  ctx.fillStyle = 'rgba(0,0,0,0.12)';
+  ctx.fillRect(430, 328, 480, 4);
+  /* nohy stolu */
+  ctx.fillStyle = '#5A4429';
+  ctx.fillRect(450, 346, 14, 90);
+  ctx.fillRect(880, 346, 14, 90);
+
+  /* židle (za stolem, jednoduchá silueta) */
+  ctx.fillStyle = 'rgba(44,62,80,0.55)';
+  ctx.beginPath();
+  ctx.roundRect(690, 200, 90, 90, 14);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.roundRect(700, 130, 70, 90, 20);
+  ctx.fill();
+
+  /* monitor — pulzující rámeček zve ke kliknutí */
+  const pulse = 0.5 + 0.5 * Math.sin(t / 26);
+  ctx.save();
+  ctx.shadowColor = `rgba(232,163,61,${0.35 + 0.25 * pulse})`;
+  ctx.shadowBlur = hoveringMonitor ? 26 : 14;
+  ctx.fillStyle = '#2B2620';
+  ctx.beginPath();
+  ctx.roundRect(monitorHit.x - 10, monitorHit.y - 10, monitorHit.w + 20, monitorHit.h + 34, 8);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.fillStyle = hoveringMonitor ? '#123A5C' : '#0A4D8C';
+  ctx.beginPath();
+  ctx.roundRect(monitorHit.x, monitorHit.y, monitorHit.w, monitorHit.h, 4);
+  ctx.fill();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.font = 'bold 11px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('SAP Easy Access', monitorHit.x + monitorHit.w / 2, monitorHit.y + 22);
+  ctx.font = '10px Arial';
+  ctx.fillStyle = 'rgba(255,255,255,0.65)';
+  ctx.fillText('klikni pro otevření', monitorHit.x + monitorHit.w / 2, monitorHit.y + 40);
+
+  /* blikající kurzor */
+  if (Math.floor(t / 30) % 2 === 0) {
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillRect(monitorHit.x + 20, monitorHit.y + 60, 7, 12);
+  }
+
+  /* monitor stojan + klávesnice */
+  ctx.fillStyle = '#4A4642';
+  ctx.fillRect(monitorHit.x + monitorHit.w / 2 - 6, monitorHit.y + monitorHit.h, 12, 16);
+  ctx.fillRect(monitorHit.x + monitorHit.w / 2 - 30, monitorHit.y + monitorHit.h + 14, 60, 6);
+  ctx.fillStyle = '#3A3733';
+  ctx.beginPath();
+  ctx.roundRect(monitorHit.x + 10, monitorHit.y + monitorHit.h + 34, 150, 24, 3);
+  ctx.fill();
+
+  /* jmenovka mentorky na stole */
+  ctx.fillStyle = '#F4F1E8';
+  ctx.beginPath();
+  ctx.roundRect(480, 300, 80, 24, 3);
+  ctx.fill();
+  ctx.fillStyle = '#2C3E50';
+  ctx.font = 'bold 10px system-ui';
+  ctx.fillText('O. Nováková', 520, 315);
+}
+
+function animate() {
+  t++;
+  drawScene();
+  requestAnimationFrame(animate);
+}
+
+/* přepočet myši na souřadnice canvasu (canvas je responzivně škálovaný) */
+function getCanvasCoords(evt) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = W / rect.width;
+  const scaleY = H / rect.height;
+  return { x: (evt.clientX - rect.left) * scaleX, y: (evt.clientY - rect.top) * scaleY };
+}
+function isOverMonitor(pos) {
+  return pos.x >= monitorHit.x - 10 && pos.x <= monitorHit.x + monitorHit.w + 10 &&
+         pos.y >= monitorHit.y - 10 && pos.y <= monitorHit.y + monitorHit.h + 24;
+}
+canvas.addEventListener('mousemove', (e) => {
+  const pos = getCanvasCoords(e);
+  hoveringMonitor = isOverMonitor(pos);
+  canvas.style.cursor = hoveringMonitor ? 'pointer' : 'default';
+});
+canvas.addEventListener('click', (e) => {
+  const pos = getCanvasCoords(e);
+  if (isOverMonitor(pos) && dialogueState.awaitingSapOpen) {
+    openSapModal();
+  }
+});
+
+/* ---------- Dialogový systém ---------- */
+const dialogueState = { queue: [], index: -1, awaitingSapOpen: false };
+
+const INTRO_LINES = [
+  'Dobré ráno! Vítej v novém týdnu tady v Nordkron Industries.',
+  'Dorazila poptávka ze skladu — potřebujeme doplnit ocelové profily na výrobu.',
+  'Dodavatel Steelcore CZ s.r.o. nám poslal nabídku: 100 ks profilu M-100 za 245 Kč/ks.',
+  'Musíme to zadat do SAPu jako objednávku — transakce ME21N. Otevři si obrazovku na stole a pojďme na to.',
+];
+
+function showDialogue(lines, onFinish) {
+  dialogueState.queue = lines;
+  dialogueState.index = -1;
+  dialogueState.onFinish = onFinish;
+  document.getElementById('dialogueBox').classList.remove('hidden');
+  advanceDialogue();
+}
+function advanceDialogue() {
+  dialogueState.index++;
+  const box = document.getElementById('dialogueText');
+  const btn = document.getElementById('dialogueNextBtn');
+  if (dialogueState.index >= dialogueState.queue.length) {
+    document.getElementById('dialogueBox').classList.add('hidden');
+    if (dialogueState.onFinish) dialogueState.onFinish();
+    return;
+  }
+  box.textContent = dialogueState.queue[dialogueState.index];
+  const isLast = dialogueState.index === dialogueState.queue.length - 1;
+  if (isLast && dialogueState.awaitingSapOpenNext) {
+    btn.textContent = 'Otevřít SAP obrazovku ▸';
+  } else {
+    btn.textContent = 'Pokračovat ▸';
+  }
+}
+document.getElementById('dialogueNextBtn').addEventListener('click', () => {
+  const isLast = dialogueState.index === dialogueState.queue.length - 1;
+  if (isLast && dialogueState.awaitingSapOpenNext) {
+    document.getElementById('dialogueBox').classList.add('hidden');
+    dialogueState.awaitingSapOpen = true;
+    dialogueState.awaitingSapOpenNext = false;
+    return;
+  }
+  advanceDialogue();
+});
+
+/* ---------- SAP modál: naplnění a logika ---------- */
+function populateSelect(selectEl, items, labelFn) {
+  items.forEach(it => {
+    const opt = document.createElement('option');
+    opt.value = it.id;
+    opt.textContent = labelFn(it);
+    selectEl.appendChild(opt);
+  });
+}
+populateSelect(document.getElementById('f-vendor'), VENDORS, v => `${v.id} — ${v.name}`);
+populateSelect(document.getElementById('f-purchGroup'), PURCH_GROUPS, g => `${g.id} — ${g.name}`);
+populateSelect(document.getElementById('f-material'), MATERIALS, m => `${m.id} — ${m.name}`);
+populateSelect(document.getElementById('f-plant'), PLANTS, p => `${p.id} — ${p.name}`);
+
+/* dnešní datum jako výchozí hodnota */
+(function setDefaultDates() {
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('f-docDate').value = today;
+})();
+
+/* tooltipy nápovědy */
+document.querySelectorAll('.help-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = document.getElementById(btn.dataset.help);
+    target.classList.toggle('show');
+  });
+});
+
+/* auto-doplnění ceny podle vybraného materiálu (jen návrh, needitovatelné pole zůstává editovatelné) */
+document.getElementById('f-material').addEventListener('change', (e) => {
+  const mat = MATERIALS.find(m => m.id === e.target.value);
+  const priceField = document.getElementById('f-netPrice');
+  if (mat && !priceField.value) priceField.value = mat.price;
+});
+
+function clearFieldErrors() {
+  document.querySelectorAll('.sap-field-row.error').forEach(row => row.classList.remove('error'));
+}
+function setFieldError(fieldName, message) {
+  const row = document.querySelector(`.sap-field-row[data-field="${fieldName}"]`);
+  if (row) row.classList.add('error');
+  const status = document.getElementById('sapStatusBar');
+  status.textContent = '⚠ ' + message;
+  status.className = 'error';
+}
+function setStatusSuccess(message) {
+  const status = document.getElementById('sapStatusBar');
+  status.textContent = '✓ ' + message;
+  status.className = 'success';
+}
+
+let lastPoNumber = null;
+let lastDeviations = [];
+
+function validateAndSave() {
+  clearFieldErrors();
+
+  const vendor = document.getElementById('f-vendor').value;
+  const purchGroup = document.getElementById('f-purchGroup').value;
+  const docDate = document.getElementById('f-docDate').value;
+  const material = document.getElementById('f-material').value;
+  const quantity = document.getElementById('f-quantity').value;
+  const netPrice = document.getElementById('f-netPrice').value;
+  const deliveryDate = document.getElementById('f-deliveryDate').value;
+  const plant = document.getElementById('f-plant').value;
+
+  if (!vendor) return setFieldError('vendor', 'Vyplňte pole "Dodavatel".');
+  if (!purchGroup) return setFieldError('purchGroup', 'Vyplňte pole "Nákupní skupina".');
+  if (!docDate) return setFieldError('docDate', 'Vyplňte pole "Datum dokladu".');
+  if (!material) return setFieldError('material', 'Vyplňte pole "Materiál".');
+  if (!quantity || isNaN(quantity) || Number(quantity) <= 0) {
+    return setFieldError('quantity', 'Množství musí být kladné číslo.');
+  }
+  if (!netPrice || isNaN(netPrice) || Number(netPrice) <= 0) {
+    return setFieldError('netPrice', 'Netto cena musí být kladné číslo.');
+  }
+  if (!deliveryDate) return setFieldError('deliveryDate', 'Vyplňte pole "Termín dodání".');
+  if (deliveryDate < docDate) {
+    return setFieldError('deliveryDate', 'Termín dodání nemůže být dřív než datum dokladu.');
+  }
+  if (!plant) return setFieldError('plant', 'Vyplňte pole "Závod".');
+
+  /* --- vše technicky v pořádku: doklad se "uloží" --- */
+  lastPoNumber = '45' + Math.floor(100000 + Math.random() * 899999);
+  setStatusSuccess(`Objednávka ${lastPoNumber} byla vytvořena.`);
+  document.getElementById('sapSaveBtn').disabled = true;
+  document.getElementById('sapCloseBtn').disabled = false;
+  document.getElementById('sapCloseBtn').classList.remove('hidden');
+
+  /* --- obchodní (ne-systémová) kontrola oproti poptávce --- */
+  lastDeviations = [];
+  if (vendor !== TICKET.correctVendor) {
+    lastDeviations.push('Zvolil jsi jiného dodavatele, než byl v poptávce (měl to být Steelcore CZ). Systém to sice uložil, ale obchodně to neodpovídá zadání.');
+  }
+  if (material !== TICKET.correctMaterial) {
+    lastDeviations.push('Vybraný materiál neodpovídá poptávce — mělo jít o ocelový profil M-100.');
+  }
+  if (Number(quantity) !== TICKET.correctQuantity) {
+    lastDeviations.push(`Množství ${quantity} ks neodpovídá poptávce (100 ks). Vždy si zadání zkontroluj předtím, než uložíš doklad.`);
+  }
+  if (purchGroup !== TICKET.correctPurchGroup) {
+    lastDeviations.push('Zvolená nákupní skupina neodpovídá typu nákupu (mělo jít o nákup materiálu).');
+  }
+
+  state.xp = Math.min(100, state.xp + 20);
+  state.ticketDone = true;
+  saveState();
+  refreshHud();
+}
+
+document.getElementById('f-vendor').addEventListener('keyup', clearOnEdit);
+document.querySelectorAll('#sapBody input, #sapBody select').forEach(el => {
+  el.addEventListener('input', clearOnEdit);
+  el.addEventListener('change', clearOnEdit);
+});
+function clearOnEdit(e) {
+  const row = e.target.closest('.sap-field-row');
+  if (row) row.classList.remove('error');
+}
+
+document.getElementById('sapSaveBtn').addEventListener('click', validateAndSave);
+
+function openSapModal() {
+  document.getElementById('sapModalOverlay').classList.remove('hidden');
+}
+function closeSapModalToDialogue() {
+  document.getElementById('sapModalOverlay').classList.add('hidden');
+  const followUp = [`Objednávka ${lastPoNumber} je v systému. Skvělá práce na první dokument!`];
+  if (lastDeviations.length === 0) {
+    followUp.push('A navíc přesně podle poptávky — přesně takhle to má vypadat. ');
+  } else {
+    followUp.push(...lastDeviations);
+  }
+  followUp.push('To je pro dnešek vše. Zítra se podíváme na příjem zboží — transakce MIGO.');
+  showDialogue(followUp, showDayEnd);
+}
+document.getElementById('sapCloseX').addEventListener('click', () => {
+  document.getElementById('sapModalOverlay').classList.add('hidden');
+});
+document.getElementById('sapCloseBtn').addEventListener('click', closeSapModalToDialogue);
+
+/* ---------- Konec dne ---------- */
+function showDayEnd() {
+  document.getElementById('dayEndXp').textContent = state.xp;
+  document.getElementById('dayEndText').textContent =
+    'Tohle byl první krok v modulu MM (Nákup). Tento prototyp zatím obsahuje jeden den a jeden úkol — ' +
+    'v dalších verzích přibudou nové dny, transakce (MIGO, MIRO) a další moduly (sklad, nemovitosti, majetek).';
+  document.getElementById('dayEndOverlay').classList.remove('hidden');
+}
+document.getElementById('dayEndCloseBtn').addEventListener('click', () => {
+  document.getElementById('dayEndOverlay').classList.add('hidden');
+});
+
+/* ---------- Start ---------- */
+document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('startScreen').classList.add('hidden');
+  dialogueState.awaitingSapOpenNext = true;
+  showDialogue(INTRO_LINES, null);
+});
+
+loadState();
+refreshHud();
+animate();
+</script>
+
+
+</body></html>
