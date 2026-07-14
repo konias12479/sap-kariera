@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<!-- saved from url=(0049)file:///C:/Users/petrp/Downloads/sap_kariera.html -->
-<html lang="cs"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SAP Kariéra — Prototyp v0.1</title>
 <style>
@@ -360,11 +360,11 @@
   <div id="hud">
     <div class="hud-left">
       <span class="day-badge">Den <span id="dayNum">1</span></span>
-      <span class="ticket-status">Úkol dne: Vytvoř objednávku (ME21N) — <span id="ticketDoneLabel" class="">nesplněno</span></span>
+      <span class="ticket-status">Úkol dne: Vytvoř objednávku (ME21N) — <span id="ticketDoneLabel">nesplněno</span></span>
     </div>
     <div id="xpWrap">
       <span>XP</span>
-      <div id="xpBarOuter"><div id="xpBarInner" style="width: 0%;"></div></div>
+      <div id="xpBarOuter"><div id="xpBarInner"></div></div>
       <span id="xpNum">0</span>
     </div>
   </div>
@@ -411,7 +411,7 @@
 
     <div id="sapToolbar">
       <span class="tcode-label">Transakce:</span>
-      <input class="tcode" type="text" value="ME21N — Vytvořit objednávku" readonly="">
+      <input class="tcode" type="text" value="ME21N — Vytvořit objednávku" readonly>
       <span class="toolbar-ico" title="Uložit">💾</span>
       <span class="toolbar-ico" title="Zpět">↩</span>
       <span class="toolbar-ico" title="Nápověda F1">?</span>
@@ -424,7 +424,7 @@
       <div class="sap-field-row" data-field="docType">
         <div class="sap-label">Druh dokladu</div>
         <div class="sap-input-wrap">
-          <input type="text" value="NB — Standardní objednávka" readonly="">
+          <input type="text" value="NB — Standardní objednávka" readonly>
         </div>
       </div>
 
@@ -433,7 +433,7 @@
         <div class="sap-input-wrap">
           <select id="f-vendor">
             <option value="">— vyber dodavatele —</option>
-          <option value="1000">1000 — Steelcore CZ s.r.o.</option><option value="1001">1001 — KovoTech a.s.</option><option value="1002">1002 — Prague Metal Supply</option></select>
+          </select>
           <div class="field-help" id="h-vendor">Dodavatel = obchodní partner, kterému objednávku posíláme. Musí souhlasit s tím, kdo firmě reálně poslal nabídku — jinak systém sice doklad uloží, ale obchodně je to chyba.</div>
         </div>
       </div>
@@ -441,7 +441,7 @@
       <div class="sap-field-row" data-field="purchOrg">
         <div class="sap-label">Nákupní organizace</div>
         <div class="sap-input-wrap">
-          <input type="text" value="1000 — Nordkron CZ" readonly="">
+          <input type="text" value="1000 — Nordkron CZ" readonly>
         </div>
       </div>
 
@@ -450,7 +450,7 @@
         <div class="sap-input-wrap">
           <select id="f-purchGroup">
             <option value="">— vyber —</option>
-          <option value="001">001 — Nákup materiálu</option><option value="002">002 — Nákup služeb</option></select>
+          </select>
           <div class="field-help" id="h-pg">Nákupní skupina určuje, který tým/nákupčí doklad zpracovává. Pro materiál se typicně používá jiná skupina než pro nákup služeb.</div>
         </div>
       </div>
@@ -469,7 +469,7 @@
         <div class="sap-input-wrap">
           <select id="f-material">
             <option value="">— vyber materiál —</option>
-          <option value="M-100">M-100 — Ocelový profil 40x40</option><option value="M-200">M-200 — Hliníkový plech 2mm</option><option value="M-300">M-300 — Svařovací drát</option></select>
+          </select>
           <div class="field-help" id="h-mat">Číslo materiálu z materiálového kmene (MM03). Systém podle něj automaticky natáhne text, jednotku i další atributy.</div>
         </div>
       </div>
@@ -485,7 +485,7 @@
       <div class="sap-field-row" data-field="unit">
         <div class="sap-label">Jednotka</div>
         <div class="sap-input-wrap">
-          <input type="text" value="KS" readonly="">
+          <input type="text" value="KS" readonly>
         </div>
       </div>
 
@@ -499,7 +499,7 @@
       <div class="sap-field-row" data-field="currency">
         <div class="sap-label">Měna</div>
         <div class="sap-input-wrap">
-          <input type="text" value="CZK" readonly="">
+          <input type="text" value="CZK" readonly>
         </div>
       </div>
 
@@ -516,7 +516,7 @@
         <div class="sap-input-wrap">
           <select id="f-plant">
             <option value="">— vyber —</option>
-          <option value="1000">1000 — Praha — výroba</option><option value="2000">2000 — Brno — sklad</option></select>
+          </select>
           <div class="field-help" id="h-plant">Závod = organizační jednotka, do které se zboží fyzicky přijímá. Ovlivňuje i to, jaké sklady a procesy jsou dál dostupné.</div>
         </div>
       </div>
@@ -527,7 +527,7 @@
 
     <div id="sapFooter">
       <button class="btn" id="sapSaveBtn">💾 Uložit</button>
-      <button class="btn primary hidden" id="sapCloseBtn" disabled="">Zavřít obrazovku</button>
+      <button class="btn primary hidden" id="sapCloseBtn" disabled>Zavřít obrazovku</button>
     </div>
   </div>
 </div>
@@ -983,6 +983,5 @@ loadState();
 refreshHud();
 animate();
 </script>
-
-
-</body></html>
+</body>
+</html>
